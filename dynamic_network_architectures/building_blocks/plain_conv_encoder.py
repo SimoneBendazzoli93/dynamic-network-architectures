@@ -80,7 +80,7 @@ class PlainConvEncoder(nn.Module):
         self.conv_bias = conv_bias
         self.kernel_sizes = kernel_sizes
 
-    def forward(self, x):
+    def forward(self, x) -> List[torch.Tensor]:
         ret = []
         for s in self.stages:
             x = s(x)
@@ -88,7 +88,7 @@ class PlainConvEncoder(nn.Module):
         if self.return_skips:
             return ret
         else:
-            return ret[-1]
+            return [ret[-1]]
 
     def compute_conv_feature_map_size(self, input_size):
         output = np.int64(0)
