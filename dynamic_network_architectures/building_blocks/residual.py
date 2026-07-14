@@ -71,7 +71,10 @@ class BasicBlockD(nn.Module):
         self.conv2 = ConvDropoutNormReLU(conv_op, output_channels, output_channels, kernel_size, 1, conv_bias, norm_op,
                                          norm_op_kwargs, None, None, None, None)
 
-        self.nonlin2 = nonlin(**nonlin_kwargs) if nonlin is not None else lambda x: x
+        if nonlin is not None:
+            self.nonlin2 = nonlin(**nonlin_kwargs)
+        else:
+            self.nonlin2 = nn.Identity()
 
         # Stochastic Depth
         self.apply_stochastic_depth = False if stochastic_depth_p == 0.0 else True
@@ -99,7 +102,8 @@ class BasicBlockD(nn.Module):
                 )
             self.skip = nn.Sequential(*ops)
         else:
-            self.skip = lambda x: x
+            # Use nn.Identity instead of lambda for JIT compatibility
+            self.skip = nn.Identity()
 
     def forward(self, x):
         residual = self.skip(x)
@@ -108,8 +112,9 @@ class BasicBlockD(nn.Module):
             out = self.drop_path(out)
         if self.apply_se:
             out = self.squeeze_excitation(out)
-        out += residual
-        return self.nonlin2(out)
+        out = out + residual
+        out = self.nonlin2(out)
+        return out
 
     def compute_conv_feature_map_size(self, input_size):
         assert len(input_size) == len(self.stride), "just give the image size without color/feature channels or " \
