@@ -139,10 +139,12 @@ class ResidualEncoder(nn.Module):
         for s in self.stages:
             x = s(x)
             ret.append(x)
+        # Always return a list, but keep old behavior for backward compatibility
         if self.return_skips:
             return ret
         else:
-            return ret[-1]
+            # Return as a list to match the type of the other return path
+            return [ret[-1]]
 
     def compute_conv_feature_map_size(self, input_size):
         if self.stem is not None:
