@@ -78,14 +78,19 @@ class BasicBlockD(nn.Module):
 
         # Stochastic Depth
         self.apply_stochastic_depth = False if stochastic_depth_p == 0.0 else True
+        # Always create attribute drop_path to avoid attribute errors
         if self.apply_stochastic_depth:
             self.drop_path = DropPath(drop_prob=stochastic_depth_p)
+        else:
+            self.drop_path = nn.Identity()
 
         # Squeeze Excitation
         self.apply_se = squeeze_excitation
         if self.apply_se:
             self.squeeze_excitation = SqueezeExcite(self.output_channels, conv_op,
                                                     rd_ratio=squeeze_excitation_reduction_ratio, rd_divisor=8)
+        else:
+            self.squeeze_excitation = nn.Identity()
 
         has_stride = (isinstance(stride, int) and stride != 1) or any([i != 1 for i in stride])
         requires_projection = (input_channels != output_channels)
@@ -108,10 +113,8 @@ class BasicBlockD(nn.Module):
     def forward(self, x):
         residual = self.skip(x)
         out = self.conv2(self.conv1(x))
-        if self.apply_stochastic_depth:
-            out = self.drop_path(out)
-        if self.apply_se:
-            out = self.squeeze_excitation(out)
+        out = self.drop_path(out)
+        out = self.squeeze_excitation(out)
         out = out + residual
         out = self.nonlin2(out)
         return out
